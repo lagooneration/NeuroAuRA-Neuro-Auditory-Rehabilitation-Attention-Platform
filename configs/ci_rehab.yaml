@@ -1,10 +1,10 @@
-# NeuroAuRA — Cochlear Implant Rehabilitation Preset
+# Neurophile — Cochlear Implant Rehabilitation Preset
 # ====================================================
 # Inherits from default.yaml. Only overrides are listed here.
 #
 # Usage:
-#   neuroaura decode /data/my_study --config configs/ci_rehab.yaml --subject 01 --session 01
-#   neuroaura validate /data/my_study --config configs/ci_rehab.yaml
+#   neurophile decode /data/my_study --config configs/ci_rehab.yaml --subject 01 --session 01
+#   neurophile validate /data/my_study --config configs/ci_rehab.yaml
 
 _base: "configs/default.yaml"
 

@@ -17,11 +17,11 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from neuroaura.preprocessing.ci_artifact.ica_cancellation import (
+from neurophile.preprocessing.ci_artifact.ica_cancellation import (
     ICACancellation,
     ICACancellationConfig,
 )
-from neuroaura.preprocessing.ci_artifact.pipeline import (
+from neurophile.preprocessing.ci_artifact.pipeline import (
     CIArtifactPipeline,
     CIArtifactConfig,
 )

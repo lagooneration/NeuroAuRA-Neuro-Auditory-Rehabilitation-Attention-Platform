@@ -1,8 +1,10 @@
-# NeuroAuRA
+# Neurophile
 
-**Neuro-Auditory Rehabilitation & Attention Platform**
+**Umbrella Platform for Neural Decoding & Federated Research**
 
-An open-source EEG software ecosystem for auditory attention decoding, cochlear implant rehabilitation, and real-time neuroplasticity tracking — now with a unified deep-learning model ecosystem bridging multiple research labs.
+*"Join the evolution of transforming clinical recovery journeys into collective scientific progress via privacy-preserving federated learning."*
+
+An open-source software ecosystem for neural decoding, real-time neuroplasticity tracking, and clinical rehabilitation. While our current foundational models focus heavily on auditory attention decoding and cochlear implant EEG, Neurophile is designed as an extensible umbrella platform bridging multiple research labs across diverse neurological domains.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
@@ -12,7 +14,7 @@ An open-source EEG software ecosystem for auditory attention decoding, cochlear 
 
 ## Who Is This For?
 
-NeuroAuRA has two distinct user groups with different entry points:
+Neurophile has two distinct user groups with different entry points:
 
 | I am a… | I want to… | Go to… |
 |---|---|---|
@@ -21,9 +23,9 @@ NeuroAuRA has two distinct user groups with different entry points:
 
 ---
 
-## What is NeuroAuRA?
+## What is Neurophile?
 
-NeuroAuRA is **not** a general-purpose BCI framework. It is a domain-specific platform for:
+Neurophile serves as a collaborative environment for clinical applications and federated research. Our current implementations focus on auditory neuroscience, but the platform architecture is designed to support a wide range of neural decoding tasks:
 
 - **Auditory Attention Decoding (AAD):** Decode which audio stream a listener attends to from their EEG, using envelope-tracking correlations in the delta-theta band.
 - **Cochlear Implant (CI) Rehabilitation:** Provide a closed-loop environment to test whether a CI patient's auditory cortex is successfully rewiring to degraded signals.
@@ -36,7 +38,7 @@ NeuroAuRA is **not** a general-purpose BCI framework. It is a domain-specific pl
 
 ### For Clinicians (Pre-trained Model)
 ```bash
-pip install neuroaura[dl]
+pip install neurophile[dl]
 
 # TODO: hosted checkpoint not yet published — see CLINICAL_GUIDE.md for status
 python scripts/download_global_model.py       # downloads the Global CI Foundation Model
@@ -57,16 +59,16 @@ python scripts/train_global_ci_model.py --synthetic --epochs 5  # smoke test
 
 ### Legacy CLI (Classical Linear Decoder)
 ```bash
-pip install neuroaura
+pip install neurophile
 
 # Validate a BIDS-EEG dataset for AAD compliance
-neuroaura validate /path/to/your/bids/dataset/
+neurophile validate /path/to/your/bids/dataset/
 
 # Run an offline AAD evaluation on an existing dataset
-neuroaura decode --dataset /path/to/bids/ --decoder linear --window 60
+neurophile decode --dataset /path/to/bids/ --decoder linear --window 60
 
 # Run the full CI rehabilitation pipeline (offline)
-neuroaura decode --config configs/ci_rehab.yaml --dataset /path/to/bids/
+neurophile decode --config configs/ci_rehab.yaml --dataset /path/to/bids/
 ```
 
 ---
@@ -74,7 +76,7 @@ neuroaura decode --config configs/ci_rehab.yaml --dataset /path/to/bids/
 ## Architecture Overview
 
 ```
-neuroaura/
+neurophile/
 ├── data/           Data standards: BIDS-EEG + HDF5 streaming
 ├── sync/           Temporal sync: TTL (Tier 1), LSL (Tier 2), Software (Tier 3)
 ├── stimulus/       Envelope extraction + CI vocoder simulation  [UPDATED]
@@ -87,7 +89,7 @@ neuroaura/
 │   └── global_trainer.py  Strategy-Pattern training orchestrator
 ├── federated/      Federated learning: edge training + server aggregation
 ├── visualization/  Real-time dashboard + session reports
-└── cli/            `neuroaura` command-line interface
+└── cli/            `neurophile` command-line interface
 ```
 
 Data pipeline scripts (not part of the Python package):
@@ -105,22 +107,22 @@ data_pipeline/
 
 ## What Was Recently Added (v2025.06)
 
-### New: Deep Learning Model Ecosystem (`neuroaura.models`)
+### New: Deep Learning Model Ecosystem (`neurophile.models`)
 A new `models` package introduces PyTorch-native AAD models alongside the existing sklearn-based `LinearDecoder`. The architecture uses the **Adapter Pattern** to standardize diverse academic AAD models under a single interface.
 
 ```python
-from neuroaura.models import KULAdapter, GlobalCITrainer
+from neurophile.models import KULAdapter, GlobalCITrainer
 
 model = KULAdapter(num_eeg_channels=64)          # fallback TCN — no external deps
 trainer = GlobalCITrainer(model, epochs=50)
 trainer.train(clean_eeg, ci_envelope, labels)    # outputs .pt checkpoint
 ```
 
-### New: CI Vocoder (`neuroaura.stimulus.CIVocoderSimulator`)
+### New: CI Vocoder (`neurophile.stimulus.CIVocoderSimulator`)
 Converts normal-hearing audio into a mathematical simulation of what a Cochlear Implant user hears — N frequency bands, Hilbert amplitude modulation, noise/sine carriers. Used to train models that are biologically primed for CI acoustics.
 
 ```python
-from neuroaura.stimulus import CIVocoderSimulator
+from neurophile.stimulus import CIVocoderSimulator
 vocoder = CIVocoderSimulator(fs=44100, n_channels=16)
 ci_audio, ci_envelope = vocoder.simulate_and_extract_envelope(audio, fs_eeg=64)
 ```
@@ -129,7 +131,7 @@ ci_audio, ci_envelope = vocoder.simulate_and_extract_envelope(audio, fs_eeg=64)
 Stage 3 of the CI artifact pipeline (previously a no-op stub) is now a full **ICA-based cancellation** module. FastICA automatically identifies and removes CI electrical artifact components using kurtosis + periodicity criteria.
 
 ```python
-from neuroaura.preprocessing.ci_artifact.pipeline import CIArtifactPipeline, CIArtifactConfig
+from neurophile.preprocessing.ci_artifact.pipeline import CIArtifactPipeline, CIArtifactConfig
 
 pipeline = CIArtifactPipeline(fs=1000, config=CIArtifactConfig(stage3_enabled=True))
 clean_eeg = pipeline.run(raw_eeg)
@@ -147,7 +149,7 @@ clean_eeg = pipeline.run(raw_eeg)
 | BrainProducts LiveAmp | 🔧 Scaffold | `brainvision-rda` | 32/64 | Research-grade reference device |
 | g.tec g.USBamp | 🔧 Scaffold | `pygds` | 16/32 | CI-lab gold standard |
 | Emotiv EPOC X | 🔧 Scaffold | `cortex` | 14 | Consumer, proprietary SDK |
-| Any LSL-compatible | ✅ Generic | `pylsl` | any | Use `neuroaura.devices.lsl_generic` |
+| Any LSL-compatible | ✅ Generic | `pylsl` | any | Use `neurophile.devices.lsl_generic` |
 
 ---
 
@@ -165,7 +167,7 @@ Auditory Attention Decoding requires < 3 ms audio-EEG temporal alignment. The pl
 
 ## CI Artifact Pipeline
 
-Cochlear implant EEG artifacts are **not** removable with standard ICA/ASR. NeuroAuRA uses a three-stage pipeline:
+Cochlear implant EEG artifacts are **not** removable with standard ICA/ASR. Neurophile uses a three-stage pipeline:
 
 | Stage | Method | Status |
 |-------|--------|--------|
@@ -199,7 +201,7 @@ Cochlear implant EEG artifacts are **not** removable with standard ICA/ASR. Neur
 
 ## Stimuli
 
-All audio stimuli bundled with NeuroAuRA are CC-licensed. See [stimuli/manifest.yaml](stimuli/manifest.yaml) and [stimuli/LICENSE.md](stimuli/LICENSE.md) for per-file attribution.
+All audio stimuli bundled with Neurophile are CC-licensed. See [stimuli/manifest.yaml](stimuli/manifest.yaml) and [stimuli/LICENSE.md](stimuli/LICENSE.md) for per-file attribution.
 
 ---
 
@@ -212,21 +214,21 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CONTRIBUTORS.md](CONTRIBUTORS.md). T
 3. **`scripts/download_global_model.py`** — Checkpoint downloader (TODO)
 4. **Wire real KUL / Mesgarani models** — Fill TODO markers in adapter shims
 5. **CI artifact Stage 2** (`spatial_filter.py`) — Spatial filtering contribution
-6. **New EEG device drivers** (`src/neuroaura/devices/`)
-7. **ZionGolumbic cross-attention adapter** (`src/neuroaura/models/adapters/`)
+6. **New EEG device drivers** (`src/neurophile/devices/`)
+7. **ZionGolumbic cross-attention adapter** (`src/neurophile/models/adapters/`)
 8. **Federated Learning client** — Flower `NumPyClient` wrapper for edge devices
 
 ---
 
 ## Citation
 
-If you use NeuroAuRA in a publication, please cite:
+If you use Neurophile in a publication, please cite:
 
 ```bibtex
-@software{neuroaura2025,
-  title  = {NeuroAuRA: Neuro-Auditory Rehabilitation \& Attention Platform},
+@software{neurophile2025,
+  title  = {Neurophile: Neuro-Auditory Rehabilitation \& Attention Platform},
   year   = {2025},
-  url    = {https://github.com/neuroaura/neuroaura},
+  url    = {https://github.com/neurophile/neurophile},
   license = {Apache-2.0}
 }
 ```

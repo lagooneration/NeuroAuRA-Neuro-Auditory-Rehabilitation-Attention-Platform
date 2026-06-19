@@ -3,9 +3,9 @@
 import numpy as np
 import pytest
 
-from neuroaura.preprocessing.ci_artifact.pipeline import CIArtifactPipeline
-from neuroaura.preprocessing.ci_artifact.template_subtraction import CITemplateSubtraction
-from neuroaura.preprocessing.ci_artifact.quality import CIArtifactQuality
+from neurophile.preprocessing.ci_artifact.pipeline import CIArtifactPipeline
+from neurophile.preprocessing.ci_artifact.template_subtraction import CITemplateSubtraction
+from neurophile.preprocessing.ci_artifact.quality import CIArtifactQuality
 
 
 FS = 1000
@@ -29,7 +29,7 @@ class TestCITemplateSubtraction:
         assert clean_hf < raw_hf, "HF power should decrease after artifact removal"
 
     def test_disabled_returns_copy(self, synthetic_eeg):
-        from neuroaura.preprocessing.ci_artifact.template_subtraction import TemplateSubtractionConfig
+        from neurophile.preprocessing.ci_artifact.template_subtraction import TemplateSubtractionConfig
         config = TemplateSubtractionConfig(enabled=False)
         stage1 = CITemplateSubtraction(fs=512, config=config)
         clean = stage1.fit_transform(synthetic_eeg)

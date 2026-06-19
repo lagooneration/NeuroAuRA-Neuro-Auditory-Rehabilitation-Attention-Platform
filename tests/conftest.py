@@ -1,5 +1,5 @@
 """
-Pytest fixtures for NeuroAuRA unit tests.
+Pytest fixtures for Neurophile unit tests.
 
 All fixtures produce synthetic data so that tests run instantly with no
 internet access, no real datasets, and no hardware.
@@ -68,7 +68,7 @@ def synthetic_ci_eeg(synthetic_eeg) -> np.ndarray:
 @pytest.fixture
 def aad_trials(synthetic_eeg, synthetic_envelope) -> list:
     """Four synthetic AADTrial objects for leave-one-trial-out evaluation tests."""
-    from neuroaura.decoding.aad_evaluation import AADTrial
+    from neurophile.decoding.aad_evaluation import AADTrial
 
     rng = np.random.default_rng(7)
     trials = []

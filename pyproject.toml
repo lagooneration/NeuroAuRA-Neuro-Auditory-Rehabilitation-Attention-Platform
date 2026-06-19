@@ -3,14 +3,14 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.dynamic]
-version = {attr = "neuroaura._version.__version__"}
+version = {attr = "neurophile._version.__version__"}
 
 [project]
-name = "neuroaura"
+name = "neurophile"
 dynamic = ["version"]
 description = "Open-source EEG platform for auditory attention decoding and cochlear implant rehabilitation"
 authors = [
-    { name = "NeuroAuRA Contributors" },
+    { name = "Neurophile Contributors" },
 ]
 license = { text = "Apache-2.0" }
 keywords = [
@@ -89,28 +89,28 @@ dev = [
 ]
 
 all = [
-    "neuroaura[realtime]",
-    "neuroaura[federated]",
-    "neuroaura[viz]",
-    "neuroaura[dl]",
-    "neuroaura[openbci]",
+    "neurophile[realtime]",
+    "neurophile[federated]",
+    "neurophile[viz]",
+    "neurophile[dl]",
+    "neurophile[openbci]",
 ]
 
 [project.scripts]
-neuroaura = "neuroaura.cli.main:cli"
+neurophile = "neurophile.cli.main:cli"
 
 [project.urls]
-Homepage       = "https://github.com/neuroaura/neuroaura"
-Documentation  = "https://neuroaura.readthedocs.io"
-Repository     = "https://github.com/neuroaura/neuroaura"
-"Bug Tracker"  = "https://github.com/neuroaura/neuroaura/issues"
+Homepage       = "https://github.com/neurophile/neurophile"
+Documentation  = "https://neurophile.readthedocs.io"
+Repository     = "https://github.com/neurophile/neurophile"
+"Bug Tracker"  = "https://github.com/neurophile/neurophile/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["neuroaura*"]
+include = ["neurophile*"]
 
 [tool.setuptools.package-data]
-neuroaura = [
+neurophile = [
     "data/schemas/*.json",
     "stimulus/schemas/*.yaml",
     "py.typed",
@@ -127,7 +127,7 @@ select = ["E", "F", "W", "B", "C4", "I", "UP"]
 ignore = ["E203", "E501", "B905"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["neuroaura"]
+known-first-party = ["neurophile"]
 lines-after-imports = 2
 
 [tool.ruff.format]
@@ -155,7 +155,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/neuroaura"]
+source = ["src/neurophile"]
 omit = ["*/tests/*", "*/_scaffold_*"]
 
 [tool.coverage.report]

@@ -3,7 +3,7 @@ scripts/train_global_ci_model.py
 =================================
 Master training script for the Global CI Foundation Model.
 
-Implements the 6-step mathematical pipeline from the NeuroAuRA blueprint:
+Implements the 6-step mathematical pipeline from the Neurophile blueprint:
 
   Step 1 — Ingest baseline audio from downloaded datasets
   Step 2 — Vocode to CI: CIVocoderSimulator converts NH audio → CI simulation
@@ -43,23 +43,23 @@ from pathlib import Path
 
 import numpy as np
 
-# ── NeuroAuRA imports ─────────────────────────────────────────────────────────
+# ── Neurophile imports ─────────────────────────────────────────────────────────
 try:
-    from neuroaura.stimulus.ci_vocoder import CIVocoderSimulator
-    from neuroaura.preprocessing.ci_artifact.pipeline import (
+    from neurophile.stimulus.ci_vocoder import CIVocoderSimulator
+    from neurophile.preprocessing.ci_artifact.pipeline import (
         CIArtifactPipeline,
         CIArtifactConfig,
     )
-    from neuroaura.preprocessing.ci_artifact.ica_cancellation import (
+    from neurophile.preprocessing.ci_artifact.ica_cancellation import (
         ICACancellationConfig,
     )
 except ImportError as exc:
-    print(f"Error importing neuroaura: {exc}")
+    print(f"Error importing neurophile: {exc}")
     print("Run: pip install -e 'p:/auditory/aad[dl]'")
     sys.exit(1)
 
 try:
-    from neuroaura.models import KULAdapter, MesgaraniAdapter, GlobalCITrainer
+    from neurophile.models import KULAdapter, MesgaraniAdapter, GlobalCITrainer
     _TORCH_AVAILABLE = True
 except ImportError:
     _TORCH_AVAILABLE = False
@@ -182,8 +182,8 @@ def step5_6_train(
     """Steps 5–6: Feed data into adapter model and train."""
     if not _TORCH_AVAILABLE:
         logger.error(
-            "PyTorch not installed. Install with: pip install 'neuroaura[dl]'\n"
-            "For sklearn LinearDecoder, use the neuroaura CLI instead."
+            "PyTorch not installed. Install with: pip install 'neurophile[dl]'\n"
+            "For sklearn LinearDecoder, use the neurophile CLI instead."
         )
         sys.exit(1)
 
@@ -243,7 +243,7 @@ def step5_6_train(
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Train the NeuroAuRA Global CI Foundation Model.",
+        description="Train the Neurophile Global CI Foundation Model.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -299,7 +299,7 @@ def main() -> None:
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("=" * 60)
-    logger.info("  NeuroAuRA — Global CI Foundation Model Training")
+    logger.info("  Neurophile — Global CI Foundation Model Training")
     logger.info("  Model: %s | Epochs: %d | Device: %s", args.model, args.epochs, args.device)
     logger.info("=" * 60)
 

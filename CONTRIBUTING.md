@@ -1,4 +1,4 @@
-# Contributing to NeuroAuRA
+# Contributing to Neurophile
 
 Thank you for contributing to open-source auditory neuroscience tooling!
 
@@ -13,7 +13,7 @@ Thank you for contributing to open-source auditory neuroscience tooling!
 
 ## Where to start
 
-Check the [GitHub Issues](https://github.com/neuroaura/neuroaura/issues) for items tagged:
+Check the [GitHub Issues](https://github.com/neurophile/neurophile/issues) for items tagged:
 - `good-first-issue` — well-scoped tasks, good for new contributors
 - `scaffold` — placeholder modules that need implementing (see map below)
 - `ci-artifact` — cochlear implant artifact methods
@@ -26,7 +26,7 @@ These modules have detailed specs in their docstrings. Pick one, read the spec, 
 ### CI Artifact Pipeline (Stage 2 & 3)
 
 ```
-src/neuroaura/preprocessing/ci_artifact/
+src/neurophile/preprocessing/ci_artifact/
   spatial_filter.py     ← CCA / LCMV / SSD spatial filter (Stage 2)
   adaptive_filter.py    ← LMS / RLS adaptive filter (Stage 3)
 ```
@@ -41,7 +41,7 @@ src/neuroaura/preprocessing/ci_artifact/
 ### EEG Device Drivers
 
 ```
-src/neuroaura/devices/
+src/neurophile/devices/
   muse.py               ← Muse 2 / Muse S (muselsl)
   brainproducts.py      ← BrainProducts LiveAmp (brainvision-rda)
   gtec.py               ← g.tec g.USBamp (pygds)
@@ -53,7 +53,7 @@ All device drivers must implement the `BaseDevice` protocol defined in `devices/
 ### AAD Decoders
 
 ```
-src/neuroaura/decoding/
+src/neurophile/decoding/
   cnn_decoder.py        ← CNN-based AAD (Vandecappelle et al., 2021)
   plasticity.py         ← Longitudinal N1/P2 + cortical tracking model
 ```
@@ -61,7 +61,7 @@ src/neuroaura/decoding/
 ### Real-time Sync (Phase 2)
 
 ```
-src/neuroaura/sync/
+src/neurophile/sync/
   ttl.py                ← Hardware TTL trigger (Tier 1)
   lsl.py                ← LSL network sync (Tier 2)
   drift.py              ← Clock drift correction
@@ -73,8 +73,8 @@ src/neuroaura/sync/
 
 ```bash
 # Clone the repo
-git clone https://github.com/neuroaura/neuroaura.git
-cd neuroaura
+git clone https://github.com/neurophile/neurophile.git
+cd neurophile
 
 # Create virtual environment
 python -m venv .venv
@@ -95,17 +95,17 @@ pytest tests/unit/ -m "not slow"  # exclude dataset downloads
 
 ## Adding a New Decoder
 
-1. Create `src/neuroaura/decoding/my_decoder.py`.
-2. Subclass `BaseDecoder` from `neuroaura.decoding.base`.
+1. Create `src/neurophile/decoding/my_decoder.py`.
+2. Subclass `BaseDecoder` from `neurophile.decoding.base`.
 3. Implement `fit(eeg, envelope, fs)` and `predict(eeg)` methods.
-4. Register in `neuroaura.decoding.__init__`.
+4. Register in `neurophile.decoding.__init__`.
 5. Add unit tests in `tests/unit/test_my_decoder.py` using synthetic data from `conftest.py`.
 6. Add to `README.md` decoder table with status `🔧 Community`.
 
 **Minimal decoder skeleton:**
 
 ```python
-from neuroaura.decoding.base import BaseDecoder
+from neurophile.decoding.base import BaseDecoder
 import numpy as np
 
 class MyDecoder(BaseDecoder):
@@ -139,7 +139,7 @@ class MyDecoder(BaseDecoder):
 ## Adding a New EEG Device Driver
 
 ```python
-from neuroaura.devices.base import BaseDevice, DeviceInfo
+from neurophile.devices.base import BaseDevice, DeviceInfo
 import numpy as np
 
 class MyDevice(BaseDevice):
@@ -169,7 +169,7 @@ class MyDevice(BaseDevice):
 | Tool | Command | Runs on |
 |------|---------|---------|
 | Lint + format | `ruff check . && ruff format .` | every commit (pre-commit) |
-| Type check | `mypy src/neuroaura/` | PRs |
+| Type check | `mypy src/neurophile/` | PRs |
 | Tests | `pytest tests/unit/` | every commit |
 | Coverage | `pytest --cov` | PRs (must not drop below threshold) |
 
@@ -182,10 +182,10 @@ All audio stimuli must be CC-BY or CC0. Do not add CC-BY-NC or copyrighted conte
 When adding a stimulus:
 1. Place the file in `stimuli/audio/<category>/`.
 2. Add an entry to `stimuli/manifest.yaml` with the SHA-256 checksum, license, and source URL.
-3. Compute the envelope cache: `neuroaura stimulus cache stimuli/manifest.yaml`.
+3. Compute the envelope cache: `neurophile stimulus cache stimuli/manifest.yaml`.
 
 ---
 
 ## Questions?
 
-Open an issue or start a [Discussion](https://github.com/neuroaura/neuroaura/discussions).
+Open an issue or start a [Discussion](https://github.com/neurophile/neurophile/discussions).

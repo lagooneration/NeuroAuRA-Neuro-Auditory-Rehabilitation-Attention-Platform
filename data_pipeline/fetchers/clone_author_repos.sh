@@ -3,11 +3,11 @@
 # clone_author_repos.sh
 # =============================================================================
 # Clone the academic AAD model repositories into external_libs/ so that the
-# NeuroAuRA adapter shim layers can import the real model classes.
+# Neurophile adapter shim layers can import the real model classes.
 #
 # After cloning, follow the TODO instructions in:
-#   src/neuroaura/models/adapters/kul_cnn_adapter.py
-#   src/neuroaura/models/adapters/mesgarani_crn_adapter.py
+#   src/neurophile/models/adapters/kul_cnn_adapter.py
+#   src/neurophile/models/adapters/mesgarani_crn_adapter.py
 #
 # Usage:
 #   bash data_pipeline/fetchers/clone_author_repos.sh
@@ -57,7 +57,7 @@ clone_or_update() {
 
 echo ""
 echo "============================================================"
-echo "  NeuroAuRA — Cloning External AAD Model Repositories"
+echo "  Neurophile — Cloning External AAD Model Repositories"
 echo "  Destination: $(pwd)/${EXTERNAL_DIR}/"
 echo "============================================================"
 echo ""
@@ -103,8 +103,8 @@ echo "     ls ${EXTERNAL_DIR}/locus-of-auditory-attention-cnn/"
 echo "     ls ${EXTERNAL_DIR}/naplib-python/naplib/"
 echo ""
 echo "  2. Update the adapter shim layers with the real import paths:"
-echo "     src/neuroaura/models/adapters/kul_cnn_adapter.py"
-echo "     src/neuroaura/models/adapters/mesgarani_crn_adapter.py"
+echo "     src/neurophile/models/adapters/kul_cnn_adapter.py"
+echo "     src/neurophile/models/adapters/mesgarani_crn_adapter.py"
 echo "     (Follow the '# TODO (implementer)' comments in each file)"
 echo ""
 echo "  3. Add external_libs/ to sys.path or install as editable packages:"

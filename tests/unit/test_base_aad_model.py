@@ -16,10 +16,10 @@ import pytest
 torch = pytest.importorskip("torch", reason="torch not installed — skipping deep learning tests")
 
 
-from neuroaura.models.core.base_aad_model import BaseAADModel, _require_torch
-from neuroaura.models.adapters.kul_cnn_adapter import KULAdapter
-from neuroaura.models.adapters.mesgarani_crn_adapter import MesgaraniAdapter
-from neuroaura.models.global_trainer import GlobalCITrainer
+from neurophile.models.core.base_aad_model import BaseAADModel, _require_torch
+from neurophile.models.adapters.kul_cnn_adapter import KULAdapter
+from neurophile.models.adapters.mesgarani_crn_adapter import MesgaraniAdapter
+from neurophile.models.global_trainer import GlobalCITrainer
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -196,7 +196,7 @@ def test_trainer_smoke_train(kul_model: KULAdapter) -> None:
 
     trainer = GlobalCITrainer(
         kul_model, epochs=1, batch_size=4,
-        output_dir="/tmp/neuroaura_test_ckpts"
+        output_dir="/tmp/neurophile_test_ckpts"
     )
     history = trainer.train(eeg, env, labels)
     assert len(history) == 1

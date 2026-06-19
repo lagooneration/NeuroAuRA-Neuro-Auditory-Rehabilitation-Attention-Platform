@@ -1,6 +1,6 @@
 """Unit tests for the metadata validator and alignment grading."""
 
-from neuroaura.data.validators.metadata import validate_session, _compute_alignment_grade
+from neurophile.data.validators.metadata import validate_session, _compute_alignment_grade
 
 
 def test_valid_session_grade_b(bids_root):

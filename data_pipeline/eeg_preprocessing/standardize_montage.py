@@ -1,17 +1,17 @@
 """
 standardize_montage.py
 =======================
-Remap arbitrary EEG channel layouts to the NeuroAuRA standard 64-channel
+Remap arbitrary EEG channel layouts to the Neurophile standard 64-channel
 10-20 montage using MNE-Python.
 
 This is the EEG preprocessing analogue of the adapter pattern: just as the
-model adapters translate external model architectures to the NeuroAuRA
+model adapters translate external model architectures to the Neurophile
 tensor contract, this script translates arbitrary montages to the standard
 channel layout expected by all preprocessing and decoding modules.
 
 Montage Standard
 ----------------
-NeuroAuRA uses the standard 64-channel 10-20 layout (BrainProducts actiCAP,
+Neurophile uses the standard 64-channel 10-20 layout (BrainProducts actiCAP,
 which matches the KUL dataset and most clinical CI recording setups):
 
     Fp1, Fp2, F7, F3, Fz, F4, F8, FC5, FC1, FC2, FC6, T7, C3, Cz, C4, T8,
@@ -39,7 +39,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# ── NeuroAuRA canonical 64-ch channel names (10-20 standard) ─────────────────
+# ── Neurophile canonical 64-ch channel names (10-20 standard) ─────────────────
 NEUROAURA_64CH = [
     "Fp1", "AF7", "AF3", "F1", "F3", "F5", "F7", "FT7",
     "FC5", "FC3", "FC1", "C1", "C3", "C5", "T7", "TP7",
@@ -54,12 +54,12 @@ assert len(NEUROAURA_64CH) == 64, "Canonical channel list must have exactly 64 e
 
 
 class MontageStandardizer:
-    """Remap an MNE Raw object's channels to the NeuroAuRA 64-ch standard.
+    """Remap an MNE Raw object's channels to the Neurophile 64-ch standard.
 
     Parameters
     ----------
     target_channels : list[str] or None
-        Target channel set. None = use the NeuroAuRA 64-ch canonical layout.
+        Target channel set. None = use the Neurophile 64-ch canonical layout.
     montage_name : str
         MNE standard montage to assign. Default: ``"standard_1020"``.
     handle_missing : str
@@ -195,7 +195,7 @@ class MontageStandardizer:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Standardize EEG montage to NeuroAuRA 64-ch 10-20 layout."
+        description="Standardize EEG montage to Neurophile 64-ch 10-20 layout."
     )
     parser.add_argument("--input", type=Path, required=True, help="Input EEG file (MNE-readable)")
     parser.add_argument("--output", type=Path, required=True, help="Output .fif file path")

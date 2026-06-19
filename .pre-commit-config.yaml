@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: mypy
         args: [--ignore-missing-imports]
-        files: ^src/neuroaura/
+        files: ^src/neurophile/
         additional_dependencies:
           - numpy
           - pandas-stubs

@@ -1,6 +1,6 @@
-# CLINICAL_GUIDE.md — Using NeuroAuRA for Cochlear Implant Patients
+# CLINICAL_GUIDE.md — Using Neurophile for Cochlear Implant Patients
 
-> **Audience:** Audiologists, clinicians, and hospital researchers who want to use NeuroAuRA to decode auditory attention in Cochlear Implant (CI) patients.
+> **Audience:** Audiologists, clinicians, and hospital researchers who want to use Neurophile to decode auditory attention in Cochlear Implant (CI) patients.
 >
 > **No machine learning background required.** You do not need to download training datasets or academic model code.
 >
@@ -19,13 +19,13 @@
 > - CI vocoder simulation
 > - Training from scratch (see [CONTRIBUTORS.md](CONTRIBUTORS.md))
 >
-> **Subscribe to releases** at https://github.com/neuroaura/neuroaura/releases to be notified when the checkpoint is published.
+> **Subscribe to releases** at https://github.com/neurophile/neurophile/releases to be notified when the checkpoint is published.
 
 ---
 
 ## Table of Contents
 
-1. [What NeuroAuRA Does for CI Patients](#1-what-neuroaura-does-for-ci-patients)
+1. [What Neurophile Does for CI Patients](#1-what-neurophile-does-for-ci-patients)
 2. [Hardware Requirements](#2-hardware-requirements)
 3. [Software Installation](#3-software-installation)
 4. [Step 1 — Record a Patient EEG Session](#4-step-1--record-a-patient-eeg-session)
@@ -40,9 +40,9 @@
 
 ---
 
-## 1. What NeuroAuRA Does for CI Patients
+## 1. What Neurophile Does for CI Patients
 
-Cochlear Implant users struggle in noisy environments because their device cannot selectively amplify the speaker they are attending to. NeuroAuRA reads the patient's **EEG (brain signal)** to decode which speaker they are *trying* to listen to, even when they cannot express it verbally.
+Cochlear Implant users struggle in noisy environments because their device cannot selectively amplify the speaker they are attending to. Neurophile reads the patient's **EEG (brain signal)** to decode which speaker they are *trying* to listen to, even when they cannot express it verbally.
 
 ### How It Works (Non-Technical)
 
@@ -53,7 +53,7 @@ Patient listens to two competing speakers
 EEG electrodes record the patient's brain activity
               │
               ▼
-NeuroAuRA cleans the EEG (removes CI electrical interference)
+Neurophile cleans the EEG (removes CI electrical interference)
               │
               ▼
 The Global CI Foundation Model compares the brain signal
@@ -97,11 +97,11 @@ After downloading the Global Model, you can also **fine-tune** it on 10–20 min
 ## 3. Software Installation
 
 ```bash
-# Install NeuroAuRA with deep learning support
-pip install "neuroaura[dl]"
+# Install Neurophile with deep learning support
+pip install "neurophile[dl]"
 
 # Verify installation
-python -c "from neuroaura.stimulus import CIVocoderSimulator; print('NeuroAuRA OK')"
+python -c "from neurophile.stimulus import CIVocoderSimulator; print('Neurophile OK')"
 ```
 
 If you encounter errors, check that Python 3.10+ is installed:
@@ -143,7 +143,7 @@ For a first test, 10 minutes of dichotic listening (two speakers, patient told t
 
 ### What Kind of Audio to Use
 
-NeuroAuRA works best with **dry, continuous speech** from a single speaker per stream:
+Neurophile works best with **dry, continuous speech** from a single speaker per stream:
 
 - ✅ Single-speaker audiobook recordings (e.g., LibriSpeech, LibriVox)
 - ✅ Studio-recorded podcast speech (minimal background noise)
@@ -168,7 +168,7 @@ speaker_b.wav    ← Speaker B's audio stream
 ## 6. Step 3 — Download the Global CI Model (TODO)
 
 > **⚠️ This step is not yet available.** The checkpoint has not been published.
-> Subscribe to https://github.com/neuroaura/neuroaura/releases for notification.
+> Subscribe to https://github.com/neurophile/neurophile/releases for notification.
 
 **Intended command (once available):**
 
@@ -179,9 +179,9 @@ python scripts/download_global_model.py \
     --output-dir ./models/
 
 # Expected output:
-# Downloading neuroaura-global-ci-v1.pt from HuggingFace Hub...
+# Downloading neurophile-global-ci-v1.pt from HuggingFace Hub...
 # ✓ Checksum verified (sha256: abc123...)
-# Model saved to: ./models/neuroaura-global-ci-v1.pt
+# Model saved to: ./models/neurophile-global-ci-v1.pt
 ```
 
 **What the checkpoint contains:**
@@ -202,7 +202,7 @@ python scripts/run_inference.py \
     --eeg patient_session.fif \
     --audio-a speaker_a.wav \
     --audio-b speaker_b.wav \
-    --checkpoint ./models/neuroaura-global-ci-v1.pt \
+    --checkpoint ./models/neurophile-global-ci-v1.pt \
     --window-s 30
 
 # Expected output:
@@ -242,7 +242,7 @@ python scripts/finetune_patient.py \
     --audio-a speaker_a.wav \
     --audio-b speaker_b.wav \
     --attended-label A \
-    --checkpoint ./models/neuroaura-global-ci-v1.pt \
+    --checkpoint ./models/neurophile-global-ci-v1.pt \
     --output ./models/patient_01_finetuned.pt \
     --epochs 20
 
@@ -286,7 +286,7 @@ Longer windows improve accuracy because the neural-acoustic correlation signal n
 
 ## 10. CI Artifact Pipeline — What Happens to the EEG
 
-The CI electrical stimulation creates massive artifacts (50–100 µV) that completely mask the microvolt-level neural signal. NeuroAuRA removes these in three stages:
+The CI electrical stimulation creates massive artifacts (50–100 µV) that completely mask the microvolt-level neural signal. Neurophile removes these in three stages:
 
 ### Stage 1 — Template Subtraction ✅ (Active)
 Identifies the repeating CI pulse pattern and subtracts its average shape from every pulse. Removes ~80–90% of artifact power.
@@ -299,7 +299,7 @@ Runs Independent Component Analysis and auto-flags components with super-Gaussia
 
 **To enable Stage 3:**
 ```python
-from neuroaura.preprocessing.ci_artifact.pipeline import CIArtifactPipeline, CIArtifactConfig
+from neurophile.preprocessing.ci_artifact.pipeline import CIArtifactPipeline, CIArtifactConfig
 
 config = CIArtifactConfig(stage3_enabled=True)   # ICA on
 pipeline = CIArtifactPipeline(fs=1000, config=config)
@@ -330,13 +330,13 @@ Any CI manufacturer (Cochlear, MED-EL, Advanced Bionics, Oticon). The model was 
 
 Record at **1000 Hz minimum** so the CI artifact pulses (250–900 Hz) are captured and can be removed by the pipeline. After artifact removal, the pipeline resamples to 512 Hz. The neural signal used for attention decoding is 0.5–8 Hz, so the final model only needs 64 Hz.
 
-**Q: Can I use NeuroAuRA in real time?**
+**Q: Can I use Neurophile in real time?**
 
 The current implementation is **offline only**. Real-time LSL streaming (Tier 1/2 synchronization) is on the roadmap for Phase 2. See [README.md](README.md) Synchronization Tiers table.
 
 **Q: Is this FDA/CE cleared for clinical use?**
 
-No. NeuroAuRA is a **research platform**. It has not undergone regulatory review for clinical decision-making. Do not use model outputs as the sole basis for medical decisions.
+No. Neurophile is a **research platform**. It has not undergone regulatory review for clinical decision-making. Do not use model outputs as the sole basis for medical decisions.
 
 ---
 
@@ -344,7 +344,7 @@ No. NeuroAuRA is a **research platform**. It has not undergone regulatory review
 
 If the CI artifact pipeline does not clean your EEG adequately, or the model output seems incorrect:
 
-1. **Open a GitHub Issue** at https://github.com/neuroaura/neuroaura/issues
+1. **Open a GitHub Issue** at https://github.com/neurophile/neurophile/issues
 2. Include:
    - CI manufacturer and model (e.g., Cochlear Nucleus CI632)
    - Stimulation rate in pulses per second (pps)

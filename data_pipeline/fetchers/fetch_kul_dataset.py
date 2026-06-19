@@ -61,7 +61,7 @@ def _check_pooch() -> None:
     except ImportError:
         logger.error(
             "pooch is required: pip install pooch\n"
-            "(Already listed in neuroaura core dependencies.)"
+            "(Already listed in neurophile core dependencies.)"
         )
         sys.exit(1)
 

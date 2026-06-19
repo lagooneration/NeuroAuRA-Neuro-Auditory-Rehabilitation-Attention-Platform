@@ -1,6 +1,6 @@
 # CONTRIBUTORS.md — Researcher & Developer Guide
 
-> **Audience:** Researchers, engineers, and open-source contributors who want to train the Global CI Foundation Model from scratch, wire real academic AAD models, or extend the NeuroAuRA platform.
+> **Audience:** Researchers, engineers, and open-source contributors who want to train the Global CI Foundation Model from scratch, wire real academic AAD models, or extend the Neurophile platform.
 >
 > **Clinicians looking to use the pre-trained model:** see [CLINICAL_GUIDE.md](CLINICAL_GUIDE.md) instead.
 
@@ -25,12 +25,12 @@
 
 ## 1. Understanding the Model Architecture
 
-NeuroAuRA uses **two parallel model hierarchies**:
+Neurophile uses **two parallel model hierarchies**:
 
 ```
 Classical (CPU, fast)                    Deep Learning (GPU-capable, Flower-FL-ready)
 ─────────────────────                    ─────────────────────────────────────────────
-neuroaura.decoding.BaseDecoder           neuroaura.models.core.BaseAADModel
+neurophile.decoding.BaseDecoder           neurophile.models.core.BaseAADModel
        │                                          │
   LinearDecoder                         ┌─────────┴──────────┐
   (Ridge regression)                KULAdapter        MesgaraniAdapter
@@ -53,7 +53,7 @@ neuroaura.decoding.BaseDecoder           neuroaura.models.core.BaseAADModel
 ### Adapter Pattern (Anti-Corruption Layer)
 
 Each external research model is wrapped in an **Adapter** that:
-1. Isolates NeuroAuRA from upstream API changes in academic repos.
+1. Isolates Neurophile from upstream API changes in academic repos.
 2. Ships with a **built-in fallback network** so training runs immediately (no external repos needed).
 3. Has clear `# TODO (implementer)` markers where the real external import goes.
 
@@ -62,9 +62,9 @@ Each external research model is wrapped in an **Adapter** that:
 ## 2. Development Environment Setup
 
 ```bash
-# Clone the NeuroAuRA repo
-git clone https://github.com/neuroaura/neuroaura.git
-cd neuroaura
+# Clone the Neurophile repo
+git clone https://github.com/neurophile/neurophile.git
+cd neurophile
 
 # Create and activate a virtual environment (recommended)
 python -m venv .venv
@@ -78,7 +78,7 @@ pip install -e ".[dev,dl]"
 pre-commit install
 
 # Verify installation
-python -c "from neuroaura.models import KULAdapter; print('OK')"
+python -c "from neurophile.models import KULAdapter; print('OK')"
 ```
 
 **Dependencies installed by `[dl]`:**
@@ -114,12 +114,12 @@ bash data_pipeline/fetchers/clone_author_repos.sh --update
 | `external_libs/auditory-eeg-challenge/` | [exporl/auditory-eeg-challenge-2023-code](https://github.com/exporl/auditory-eeg-challenge-2023-code) | EXPORL supplementary challenge code |
 
 **After cloning**, wire the real models by following the `# TODO (implementer)` comments in:
-- [`src/neuroaura/models/adapters/kul_cnn_adapter.py`](src/neuroaura/models/adapters/kul_cnn_adapter.py)
-- [`src/neuroaura/models/adapters/mesgarani_crn_adapter.py`](src/neuroaura/models/adapters/mesgarani_crn_adapter.py)
+- [`src/neurophile/models/adapters/kul_cnn_adapter.py`](src/neurophile/models/adapters/kul_cnn_adapter.py)
+- [`src/neurophile/models/adapters/mesgarani_crn_adapter.py`](src/neurophile/models/adapters/mesgarani_crn_adapter.py)
 
 Then activate:
 ```python
-from neuroaura.models import KULAdapter
+from neurophile.models import KULAdapter
 model = KULAdapter(num_eeg_channels=64, use_external=True)   # uses real KUL CNN
 ```
 
@@ -157,7 +157,7 @@ python data_pipeline/fetchers/fetch_kul_dataset.py \
 ### OpenNeuro BIDS Datasets
 
 ```bash
-# List all available NeuroAuRA-compatible datasets
+# List all available Neurophile-compatible datasets
 python data_pipeline/fetchers/fetch_openneuro_bids.py --list-datasets
 
 # Download Zion-Golumbic dataset (requires AWS CLI — free, no login)
@@ -181,7 +181,7 @@ python data_pipeline/fetchers/fetch_openneuro_bids.py \
 
 ## 5. Step 3 — Standardize EEG Montages
 
-Different datasets use different channel layouts. Before training, remap all EEG to the NeuroAuRA canonical **64-channel 10-20** montage:
+Different datasets use different channel layouts. Before training, remap all EEG to the Neurophile canonical **64-channel 10-20** montage:
 
 ```bash
 # Remap a single file
@@ -284,7 +284,7 @@ Once repos are cloned and you've located the model class inside each repo:
 
 ### KULAdapter — wire the real KUL CNN
 
-Open [`src/neuroaura/models/adapters/kul_cnn_adapter.py`](src/neuroaura/models/adapters/kul_cnn_adapter.py) and find the two `# TODO (implementer)` blocks:
+Open [`src/neurophile/models/adapters/kul_cnn_adapter.py`](src/neurophile/models/adapters/kul_cnn_adapter.py) and find the two `# TODO (implementer)` blocks:
 
 ```python
 # TODO (implementer): After clone_author_repos.sh, update this import:
@@ -293,14 +293,14 @@ Open [`src/neuroaura/models/adapters/kul_cnn_adapter.py`](src/neuroaura/models/a
 # TODO (implementer): Adjust constructor arguments:
 # self.backend_model = KULeuvenCNN(n_channels=num_eeg_channels)
 
-# TODO (implementer): Translate NeuroAuRA tensors to KUL's expected format:
+# TODO (implementer): Translate Neurophile tensors to KUL's expected format:
 # eeg_translated = eeg_tensor.permute(0, 2, 1)  # (B,T,C) → (B,C,T) if needed
 ```
 
 Then test:
 ```bash
 python -c "
-from neuroaura.models import KULAdapter
+from neurophile.models import KULAdapter
 import torch
 m = KULAdapter(num_eeg_channels=64, use_external=True)
 out = m(torch.randn(2, 512, 64), torch.randn(2, 512, 1))
@@ -310,7 +310,7 @@ print('KUL real model output shape:', out.shape)  # should be (2, 1)
 
 ### MesgaraniAdapter — wire the real CRN
 
-Same process — open [`src/neuroaura/models/adapters/mesgarani_crn_adapter.py`](src/neuroaura/models/adapters/mesgarani_crn_adapter.py) and fill the `# TODO` blocks.
+Same process — open [`src/neurophile/models/adapters/mesgarani_crn_adapter.py`](src/neurophile/models/adapters/mesgarani_crn_adapter.py) and fill the `# TODO` blocks.
 
 ---
 
@@ -322,7 +322,7 @@ Once training converges, the checkpoint must be hosted publicly so clinicians ca
 
 | Platform | Why | How |
 |---|---|---|
-| **Hugging Face Hub** | Standard for ML models; versioned; free; widely trusted | `huggingface-cli upload neuroaura/global-ci-model kul_cnn_global_ci.pt` |
+| **Hugging Face Hub** | Standard for ML models; versioned; free; widely trusted | `huggingface-cli upload neurophile/global-ci-model kul_cnn_global_ci.pt` |
 | **Zenodo** | Permanent DOI; preferred for academic citation | Upload via web UI, get DOI for citation |
 | **GitHub Releases** | Simple; works for files < 2 GB | Attach `.pt` to a tagged release |
 
@@ -330,7 +330,7 @@ Once training converges, the checkpoint must be hosted publicly so clinicians ca
 - [ ] Train the model on full KUL dataset with real KUL CNN (`use_external=True`)
 - [ ] Evaluate: accuracy ≥ 70% on held-out subjects (subject-independent)
 - [ ] Save checkpoint with full metadata (training config, dataset version, model version)
-- [ ] Upload to Hugging Face Hub: `neuroaura/global-ci-model`
+- [ ] Upload to Hugging Face Hub: `neurophile/global-ci-model`
 - [ ] Compute SHA-256 of the `.pt` file
 - [ ] Implement `scripts/download_global_model.py` using `pooch` with SHA-256 verification
 - [ ] Implement `scripts/run_inference.py` for clinician use
@@ -345,11 +345,11 @@ To add a new external model (e.g., the Zion-Golumbic cross-attention model):
 ### 1. Create the adapter file
 
 ```bash
-# Create: src/neuroaura/models/adapters/zion_golumbic_adapter.py
+# Create: src/neurophile/models/adapters/zion_golumbic_adapter.py
 ```
 
 ```python
-from neuroaura.models.core.base_aad_model import BaseAADModel, _require_torch
+from neurophile.models.core.base_aad_model import BaseAADModel, _require_torch
 
 # ACL shim — guard the external import
 _ZG_EXTERNAL_AVAILABLE = False
@@ -389,8 +389,8 @@ ZionGolumbicAdapter = _make_zg_adapter_class()
 ### 2. Register in the adapters package
 
 ```python
-# In src/neuroaura/models/adapters/__init__.py — add:
-from neuroaura.models.adapters.zion_golumbic_adapter import ZionGolumbicAdapter
+# In src/neurophile/models/adapters/__init__.py — add:
+from neurophile.models.adapters.zion_golumbic_adapter import ZionGolumbicAdapter
 __all__ = ["KULAdapter", "MesgaraniAdapter", "ZionGolumbicAdapter"]
 ```
 
@@ -424,7 +424,7 @@ python -m pytest tests/unit/test_base_aad_model.py -v       # requires: pip inst
 python -m pytest tests/ -m "not slow and not network and not hardware" -q
 
 # Coverage report
-python -m pytest tests/ --cov=src/neuroaura --cov-report=term-missing
+python -m pytest tests/ --cov=src/neurophile --cov-report=term-missing
 
 # Run the training smoke test end-to-end
 python scripts/train_global_ci_model.py --synthetic --epochs 2 --model kul
@@ -448,7 +448,7 @@ python scripts/train_global_ci_model.py --synthetic --epochs 2 --model kul
 | Tool | Command | When |
 |---|---|---|
 | Lint + format | `ruff check . && ruff format .` | Every commit (pre-commit) |
-| Type check | `mypy src/neuroaura/` | PRs |
+| Type check | `mypy src/neurophile/` | PRs |
 | Tests | `pytest tests/unit/` | Every commit |
 | Coverage | `pytest --cov` | PRs (must not drop below threshold) |
 
@@ -478,4 +478,4 @@ python scripts/train_global_ci_model.py --synthetic --epochs 2 --model kul
 
 ## Questions?
 
-Open a [GitHub Issue](https://github.com/neuroaura/neuroaura/issues) or start a [Discussion](https://github.com/neuroaura/neuroaura/discussions).
+Open a [GitHub Issue](https://github.com/neurophile/neurophile/issues) or start a [Discussion](https://github.com/neurophile/neurophile/discussions).

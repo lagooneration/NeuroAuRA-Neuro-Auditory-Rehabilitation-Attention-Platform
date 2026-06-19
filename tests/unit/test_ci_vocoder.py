@@ -16,7 +16,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from neuroaura.stimulus.ci_vocoder import CIVocoderSimulator
+from neurophile.stimulus.ci_vocoder import CIVocoderSimulator
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────

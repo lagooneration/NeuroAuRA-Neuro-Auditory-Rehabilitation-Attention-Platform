@@ -3,8 +3,8 @@
 import numpy as np
 import pytest
 
-from neuroaura.decoding.linear_decoder import LinearDecoder
-from neuroaura.decoding.aad_evaluation import AADEvaluator
+from neurophile.decoding.linear_decoder import LinearDecoder
+from neurophile.decoding.aad_evaluation import AADEvaluator
 
 
 FS = 512
