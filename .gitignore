@@ -82,6 +82,8 @@ logs/
 HELP.md
 TESTING.md
 recent_changes.txt
+stimuli/stimuli
+stimuli/stimuli.zip
 
 # Context
 CLAUDE.md
@@ -90,4 +92,6 @@ AGENTS.md
 SKILL.md
 PROJECT_CONTEXT.md
 context_file_prompts.md
-.agents/
+.agents/stimuli/
+
+

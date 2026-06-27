@@ -88,6 +88,7 @@ def _build_fallback_mesgarani_crn(num_eeg_channels: int) -> "torch.nn.Module":
                 nn.Conv1d(hidden, hidden, kernel_size=5, padding=8, dilation=4),
                 nn.BatchNorm1d(hidden),
                 nn.GELU(),
+                nn.Dropout(p=0.5)  # Anti-overfitting
             )
             # Envelope encoder
             self.env_enc = nn.Sequential(

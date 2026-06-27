@@ -121,6 +121,7 @@ Input:  EEG (B, T=512, C=64)  +  Audio Envelope (B, T=512, 1)
  BatchNorm + GELU                BatchNorm + GELU
  Conv1d(64→64, k=5, d=4)
  BatchNorm + GELU
+ Dropout(p=0.5)
          │                              │
          └──────────── Cat ─────────────┘
                         │
@@ -136,7 +137,11 @@ Input:  EEG (B, T=512, C=64)  +  Audio Envelope (B, T=512, 1)
 ```
 
 **Loss function:** Binary Cross-Entropy (classification: "is Subject attending to stream A?")  
-**Optimizer:** Adam
+**Optimizer:** Adam (lr=1e-3, weight_decay=1e-4)
+**Anti-Overfitting:**
+- L2 Regularization (weight_decay)
+- Dropout(p=0.5) on convolutional features
+- Early Stopping (patience=5 on validation loss)
 
 ### 4.2 KULAdapter — CNN Classifier
 **Checkpoint:** `checkpoints/kul_cnn_global_ci.pt` (0.68 MB)

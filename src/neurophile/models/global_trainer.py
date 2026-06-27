@@ -78,7 +78,7 @@ class _PyTorchStrategy:
         self.model = model.to(device)
         self.device = device
         self.loss_mode = loss_mode
-        self.optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        self.optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
         if loss_mode == "classification":
             self.criterion = nn.BCEWithLogitsLoss()
         else:
@@ -100,21 +100,13 @@ class _PyTorchStrategy:
         label_array: np.ndarray,
         epochs: int,
         batch_size: int,
+        val_eeg: np.ndarray | None = None,
+        val_env: np.ndarray | None = None,
+        val_lbl: np.ndarray | None = None,
     ) -> list[float]:
-        """Run the PyTorch training loop.
+        """Run the PyTorch training loop with Early Stopping."""
+        import copy
 
-        Parameters
-        ----------
-        eeg_array : np.ndarray, shape (N, T, C)
-        envelope_array : np.ndarray, shape (N, T, 1)
-        label_array : np.ndarray, shape (N,)   binary {0, 1}
-        epochs : int
-        batch_size : int
-
-        Returns
-        -------
-        loss_history : list[float]
-        """
         eeg_t = torch.from_numpy(eeg_array).float()
         env_t = torch.from_numpy(envelope_array).float()
         lbl_t = torch.from_numpy(label_array).float().unsqueeze(1)
@@ -122,10 +114,20 @@ class _PyTorchStrategy:
         dataset = TensorDataset(eeg_t, env_t, lbl_t)
         loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
+        has_val = val_eeg is not None and val_env is not None and val_lbl is not None
+        if has_val:
+            v_eeg_t = torch.from_numpy(val_eeg).float().to(self.device)
+            v_env_t = torch.from_numpy(val_env).float().to(self.device)
+            v_lbl_t = torch.from_numpy(val_lbl).float().unsqueeze(1).to(self.device)
+
         history: list[float] = []
-        self.model.train()
+        best_val_loss = float("inf")
+        best_weights = None
+        patience = 5
+        epochs_no_improve = 0
 
         for epoch in range(1, epochs + 1):
+            self.model.train()
             epoch_loss = 0.0
             t0 = time.time()
             for eeg_b, env_b, lbl_b in loader:
@@ -151,10 +153,37 @@ class _PyTorchStrategy:
             mean_loss = epoch_loss / max(len(loader), 1)
             history.append(mean_loss)
             elapsed = time.time() - t0
-            logger.info(
-                "Epoch %3d/%d | loss=%.5f | %.1fs",
-                epoch, epochs, mean_loss, elapsed,
-            )
+
+            # Early Stopping Check
+            if has_val:
+                self.model.eval()
+                with torch.no_grad():
+                    v_logit = self.model(v_eeg_t, v_env_t)
+                    if self.loss_mode == "classification":
+                        val_loss = self.criterion(v_logit, v_lbl_t).item()
+                    else:
+                        val_loss = self._pearson_loss(torch.sigmoid(v_logit), v_lbl_t).item()
+
+                logger.info(
+                    "Epoch %3d/%d | train_loss=%.5f | val_loss=%.5f | %.1fs",
+                    epoch, epochs, mean_loss, val_loss, elapsed,
+                )
+
+                if val_loss < best_val_loss:
+                    best_val_loss = val_loss
+                    best_weights = copy.deepcopy(self.model.state_dict())
+                    epochs_no_improve = 0
+                else:
+                    epochs_no_improve += 1
+                    if epochs_no_improve >= patience:
+                        logger.info("Early stopping triggered! Restoring best weights (Epoch %d)", epoch - patience)
+                        self.model.load_state_dict(best_weights)
+                        break
+            else:
+                logger.info(
+                    "Epoch %3d/%d | loss=%.5f | %.1fs",
+                    epoch, epochs, mean_loss, elapsed,
+                )
 
         return history
 
@@ -288,6 +317,9 @@ class GlobalCITrainer:
         eeg_array: np.ndarray,
         envelope_array: np.ndarray,
         label_array: np.ndarray,
+        val_eeg: np.ndarray | None = None,
+        val_env: np.ndarray | None = None,
+        val_lbl: np.ndarray | None = None,
     ) -> list[float]:
         """Run training on pre-cleaned EEG + CI envelope.
 
@@ -302,6 +334,8 @@ class GlobalCITrainer:
             Simulated CI envelope (output of ``CIVocoderSimulator`` + envelope).
         label_array : np.ndarray, shape (N,)
             Binary labels: 1 = attended stream, 0 = unattended.
+        val_eeg, val_env, val_lbl : np.ndarray | None
+            Optional validation data for early stopping (PyTorch only).
 
         Returns
         -------
@@ -310,15 +344,29 @@ class GlobalCITrainer:
         """
         logger.info(
             "GlobalCITrainer.train(): N=%d trials, T=%d steps, C=%d channels | backend=%s",
-            *eeg_array.shape, self._backend,
+            eeg_array.shape[0], eeg_array.shape[1], eeg_array.shape[2], self._backend,
         )
-        history = self._strategy.fit(
-            eeg_array=eeg_array,
-            envelope_array=envelope_array,
-            label_array=label_array,
-            epochs=self.epochs,
-            batch_size=self.batch_size,
-        )
+
+        if self._backend == "pytorch":
+            history = self._strategy.fit(
+                eeg_array=eeg_array,
+                envelope_array=envelope_array,
+                label_array=label_array,
+                epochs=self.epochs,
+                batch_size=self.batch_size,
+                val_eeg=val_eeg,
+                val_env=val_env,
+                val_lbl=val_lbl,
+            )
+        else:
+            history = self._strategy.fit(
+                eeg_array=eeg_array,
+                envelope_array=envelope_array,
+                label_array=label_array,
+                epochs=self.epochs,
+                batch_size=self.batch_size,
+            )
+
         # Auto-save final checkpoint
         model_name = getattr(self.model, "name", "model")
         ckpt_path = self.output_dir / f"{model_name}_global_ci.pt"

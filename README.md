@@ -185,7 +185,7 @@ Cochlear implant EEG artifacts are **not** removable with standard ICA/ASR. Neur
 | KULAdapter | 3-layer TCN (fallback) / KUL CNN (external) | PyTorch `nn.Module` | ✅ Fallback ready | Vandecappelle et al. (2021) |
 | MesgaraniAdapter | Conv+GRU (fallback) / CRN (external) | PyTorch `nn.Module` | ✅ Fallback ready | Mesgarani & Chang (2012) |
 | ZionGolumbic cross-attention | Transformer cross-attention | PyTorch `nn.Module` | 🔧 TODO | Zion-Golumbic et al. (2013) |
-| Global CI Foundation Model | KULAdapter trained on CI-vocoded data | PyTorch checkpoint | 🔧 TODO: checkpoint not yet published | — |
+| Global CI Foundation Model | CRN trained on CI-vocoded data | PyTorch checkpoint | ✅ Implemented (using all-subject training & anti-overfitting suite) | — |
 
 ---
 

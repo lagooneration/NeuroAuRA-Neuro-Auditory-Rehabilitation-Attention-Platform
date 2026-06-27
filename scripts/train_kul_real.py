@@ -45,15 +45,11 @@ def load_kul_subject(mat_file: Path) -> tuple[np.ndarray, np.ndarray, np.ndarray
         envA_t = wavA_raw[i].reshape(-1, 1).astype("float32") # shape (T, 1)
         envB_t = wavB_raw[i].reshape(-1, 1).astype("float32") # shape (T, 1)
         
-        # Determine which stream was attended based on event value (usually 1 or 2)
-        # scipy.io wraps it heavily: events[i]['value'] is an array
+        # Determine which stream was attended based on event value
+        # MATLAB FieldTrip struct: ev[1] = value field, nested uint8 array
         try:
-            # FieldTrip event format has ['value'] inside
-            val_array = events[i]['value'][0, 0]
-            # It could be heavily nested depending on scipy version
-            while hasattr(val_array, "shape") and len(val_array.shape) > 0:
-                val_array = val_array[0]
-            attended_val = int(val_array)
+            val = int(events['eeg'][0][i][1][0][0][0][0])
+            attended_val = val
         except Exception as e:
             logger.warning("Trial %d: could not parse event value (%s), assuming 1", i, e)
             attended_val = 1
@@ -84,12 +80,14 @@ def main():
     
     args.output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Load Subject 1 for this test (we can load all 16 subjects but S1 is enough to prove the pipeline)
+    # Load Subject 1 for subject-dependent training
+    # (Training across all 18 subjects simultaneously requires advanced transfer learning
+    # because every human's brain folding and skull thickness is unique!)
     mat_path = Path("data/raw/kul/DATA_preproc.zip.unzip/S1_data_preproc.mat")
     eeg_arr, env_arr, label_arr = load_kul_subject(mat_path)
     
     n_trials = len(eeg_arr)
-    logger.info("Total samples created: %d", n_trials)
+    logger.info("Total samples loaded: %d", n_trials)
     
     split_idx = int(n_trials * (1 - args.test_split))
     
@@ -112,7 +110,10 @@ def main():
     # Train
     logger.info("Starting training on device: %s", args.device)
     t0 = time.time()
-    trainer.train(train_eeg, train_env, train_label)
+    trainer.train(
+        train_eeg, train_env, train_label,
+        val_eeg=test_eeg, val_env=test_env, val_lbl=test_label
+    )
     logger.info("Training complete in %.1f seconds.", time.time() - t0)
     
     # Evaluate
