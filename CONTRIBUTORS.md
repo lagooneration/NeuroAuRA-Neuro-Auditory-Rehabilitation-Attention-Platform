@@ -32,17 +32,17 @@ Classical (CPU, fast)                    Deep Learning (GPU-capable, Flower-FL-r
 ─────────────────────                    ─────────────────────────────────────────────
 neurophile.decoding.BaseDecoder           neurophile.models.core.BaseAADModel
        │                                          │
-  LinearDecoder                         ┌─────────┴──────────┐
-  (Ridge regression)                KULAdapter        MesgaraniAdapter
-                                  (3-layer TCN)      (Conv+GRU CRN)
-                                        │                    │
-                                   GlobalCITrainer ──────────┘
-                                   (Strategy Pattern)
-                                        │
-                              ┌─────────┴──────────┐
-                         PyTorchStrategy       SklearnStrategy
-                         (Adam, BCE loss,      (direct fit(),
-                          gradient clips)       CPU only)
+                                   ┌─────────┼──────────┐
+                             KULAdapter MesgaraniAdapter ZionGolumbicAdapter
+                           (3-layer TCN) (Conv+GRU CRN)  (CNN+CrossAttn)
+                                         │                    │
+                                    GlobalCITrainer ──────────┘
+                                    (Strategy Pattern)
+                                         │
+                               ┌─────────┴──────────┐
+                          PyTorchStrategy       SklearnStrategy
+                          (Adam, BCE loss,      (direct fit(),
+                           gradient clips)       CPU only)
 ```
 
 ### Why Two Hierarchies?
@@ -236,6 +236,12 @@ python scripts/train_global_ci_model.py \
     --synthetic \
     --epochs 5 \
     --model mesgarani
+    
+# ZionGolumbicAdapter smoke test
+python scripts/train_global_ci_model.py \
+    --synthetic \
+    --epochs 5 \
+    --model zion_golumbic
 ```
 
 **Output:**
@@ -267,7 +273,7 @@ python scripts/train_global_ci_model.py \
 | `--synthetic` | off | Use synthetic data (smoke test — no downloads needed) |
 | `--eeg-dir` | None | Directory with preprocessed EEG `.npy` files |
 | `--audio-dir` | None | Directory with `.wav` / `.flac` audio files |
-| `--model` | `kul` | Adapter: `kul` or `mesgarani` |
+| `--model` | `kul` | Adapter: `kul`, `mesgarani`, or `zion_golumbic` |
 | `--epochs` | 50 | Number of training epochs |
 | `--n-trials` | 32 | Synthetic trial count |
 | `--ci-channels` | 16 | CI vocoder channels (8–22) |
@@ -467,7 +473,6 @@ python scripts/train_global_ci_model.py --synthetic --epochs 2 --model kul
 | **`scripts/download_global_model.py`** | New file | 1 hour | 🔴 Critical — checkpoint distribution |
 | **Wire real KUL CNN** | `kul_cnn_adapter.py` TODO blocks | 1–3 hours | 🟠 High |
 | **Wire real Mesgarani CRN** | `mesgarani_crn_adapter.py` TODO blocks | 2–4 hours | 🟠 High |
-| **ZionGolumbicAdapter** | New adapter file | 3–5 days | 🟠 High |
 | **CI artifact Stage 2** (spatial filter) | `spatial_filter.py` | 3–5 days | 🟡 Medium |
 | **Federated Learning client** | Flower `NumPyClient` wrapper | 2–3 days | 🟡 Medium |
 | **Fix LinearDecoder.score() off-by-one** | `decoding/base.py:83` | 20 min | 🟡 Medium |

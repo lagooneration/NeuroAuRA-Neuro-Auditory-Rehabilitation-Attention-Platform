@@ -25,11 +25,13 @@ All adapters return:
 from neurophile.models.core.base_aad_model import BaseAADModel
 from neurophile.models.adapters.kul_cnn_adapter import KULAdapter
 from neurophile.models.adapters.mesgarani_crn_adapter import MesgaraniAdapter
+from neurophile.models.adapters.zion_golumbic_adapter import ZionGolumbicAdapter
 from neurophile.models.global_trainer import GlobalCITrainer
 
 __all__ = [
     "BaseAADModel",
     "KULAdapter",
     "MesgaraniAdapter",
+    "ZionGolumbicAdapter",
     "GlobalCITrainer",
 ]

@@ -69,6 +69,8 @@ The key insight is that the auditory cortex **physically locks onto** the 1–8 
 
 The model was trained on data from **16 subjects** and tested on acoustic conditions simulating CI hearing (via the CI vocoder). Because it learns *how the auditory cortex tracks sounds* — not language-specific patterns — it generalises across patients, languages, and CI manufacturers.
 
+The ecosystem integrates models from leading academic research, including the **KULAdapter** (KU Leuven CNN), **MesgaraniAdapter** (Columbia CRN), and **ZionGolumbicAdapter** (Bar-Ilan CNN+CrossAttention).
+
 After downloading the Global Model, you can also **fine-tune** it on 10–20 minutes of your patient's own data to improve accuracy for that individual.
 
 ---

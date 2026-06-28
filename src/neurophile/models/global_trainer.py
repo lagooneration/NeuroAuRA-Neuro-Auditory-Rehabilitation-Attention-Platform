@@ -213,12 +213,31 @@ class _SklearnStrategy:
         epochs: int,              # noqa: ARG002
         batch_size: int,          # noqa: ARG002
     ) -> list[float]:
-        """Call model.fit() — sklearn models train in a single call."""
-        # Use first trial for training (classical models are sample-efficient)
-        eeg_2d = eeg_array[0]          # (T, C)
-        env_1d = envelope_array[0, :, 0]  # (T,)
-        # Infer fs from caller context (stored on model)
+        """Call model.fit() — sklearn models train in a single call.
+
+        The mTRF backward model (LinearDecoder) requires minutes of continuous
+        EEG data to accumulate meaningful covariance matrices. We concatenate
+        all attended-stream trials (label==1) into a single continuous segment
+        before calling fit(). This is the standard mTRF training protocol.
+        """
+        # Select only attended-stream trials (label == 1.0) for fitting
+        # the backward model: EEG -> attended envelope
+        attended_mask = label_array == 1.0
+        if attended_mask.sum() == 0:
+            attended_mask = np.ones(len(label_array), dtype=bool)  # fallback
+
+        eeg_2d = np.concatenate(eeg_array[attended_mask], axis=0)        # (T_total, C)
+        env_1d = np.concatenate(envelope_array[attended_mask, :, 0], axis=0)  # (T_total,)
+
+        logger.info(
+            "SklearnStrategy: training on %d attended trials → %d total samples",
+            attended_mask.sum(), len(eeg_2d),
+        )
+
+        # Infer fs from caller context (stored on model after first fit, else default)
         fs = getattr(self.model, "fs", 64)
+        if fs == 0:
+            fs = 64
         self.model.fit(eeg_2d, env_1d, fs=fs)
         score = self.model.score(eeg_2d, env_1d)
         logger.info("sklearn model fitted. Score (ρ) = %.4f", score)
@@ -395,7 +414,7 @@ class GlobalCITrainer:
         """
         if self._backend == "pytorch":
             return self._eval_pytorch(eeg_array, envelope_array, label_array)
-        return self._eval_sklearn(eeg_array, envelope_array)
+        return self._eval_sklearn(eeg_array, envelope_array, label_array)
 
     def _eval_pytorch(
         self,
@@ -409,17 +428,26 @@ class GlobalCITrainer:
         all_probs: list[float] = []
         all_labels: list[float] = []
 
+        from torch.utils.data import DataLoader, TensorDataset
+        eeg_t = torch.from_numpy(eeg_array).float()
+        env_t = torch.from_numpy(envelope_array).float()
+        lbl_t = torch.from_numpy(label_array).float()
+        dataset = TensorDataset(eeg_t, env_t, lbl_t)
+        # Use the configured batch_size, or a large default for eval
+        eval_batch_size = getattr(self, "batch_size", 32)
+        loader = DataLoader(dataset, batch_size=eval_batch_size, shuffle=False)
+
         with torch.no_grad():
-            for i in range(len(eeg_array)):
-                eeg_t = torch.from_numpy(eeg_array[i : i + 1]).float().to(device)
-                env_t = torch.from_numpy(envelope_array[i : i + 1]).float().to(device)
-                logit = self._strategy.model(eeg_t, env_t)  # type: ignore[attr-defined]
-                prob = torch.sigmoid(logit).item()
-                pred = 1 if prob > 0.5 else 0
-                correct += int(pred == label_array[i])
-                total += 1
-                all_probs.append(prob)
-                all_labels.append(float(label_array[i]))
+            for eeg_b, env_b, lbl_b in loader:
+                eeg_b = eeg_b.to(device)
+                env_b = env_b.to(device)
+                logit = self._strategy.model(eeg_b, env_b)  # type: ignore[attr-defined]
+                prob = torch.sigmoid(logit).squeeze(-1)
+                pred = (prob > 0.5).int()
+                correct += int((pred == lbl_b.to(device)).sum().item())
+                total += len(lbl_b)
+                all_probs.extend(prob.cpu().tolist())
+                all_labels.extend(lbl_b.tolist())
 
         # Compute Pearson r over all predictions at once (needs ≥2 unique values)
         mean_pearson_r = 0.0
@@ -441,15 +469,36 @@ class GlobalCITrainer:
         self,
         eeg_array: np.ndarray,
         envelope_array: np.ndarray,
+        label_array: np.ndarray | None = None,
     ) -> dict[str, float]:
-        scores = []
-        for i in range(len(eeg_array)):
-            eeg_2d = eeg_array[i]
-            env_1d = envelope_array[i, :, 0]
-            score = self.model.score(eeg_2d, env_1d)
-            scores.append(score)
-        mean_r = float(np.mean(scores))
+        """Evaluate using 2AFC: for each attended/unattended trial pair at the
+        same time index, compare reconstruction correlations to both envelopes.
+        Accuracy = fraction of trials where r(attended) > r(unattended).
+        This matches the evaluation protocol used in the AAD literature.
+        """
+        n = len(eeg_array)
+        # Pair up attended (label=1) and unattended (label=0) trials
+        # Trials are generated in pairs: [att, unatt, att, unatt, ...]
+        correct = 0
+        total = 0
+        all_r_att = []
+
+        for i in range(0, n - 1, 2):
+            eeg_2d = eeg_array[i]             # same EEG for both in the pair
+            env_att = envelope_array[i, :, 0]
+            env_unatt = envelope_array[i + 1, :, 0]
+
+            r_att = self.model.score(eeg_2d, env_att)
+            r_unatt = self.model.score(eeg_2d, env_unatt)
+
+            if r_att > r_unatt:
+                correct += 1
+            total += 1
+            all_r_att.append(r_att)
+
+        mean_r = float(np.mean(all_r_att)) if all_r_att else 0.0
+        accuracy = correct / max(total, 1)
         return {
-            "accuracy": float(np.mean([s > 0 for s in scores])),
+            "accuracy": accuracy,
             "mean_pearson_r": mean_r,
         }

@@ -96,7 +96,8 @@ class LinearDecoder(BaseDecoder):
         self._lag_samples = np.arange(lag_min, lag_max + 1)
 
         X = self._build_lag_matrix(eeg, self._lag_samples)
-        y = envelope[lag_max:]   # align: remove first lag_max samples
+        # To match future EEG to current envelope, we truncate the end of the envelope
+        y = envelope[:-lag_max] if lag_max > 0 else envelope
 
         logger.debug(
             "LinearDecoder fitting: X=%s, y=%s, n_alphas=%d",
@@ -131,7 +132,12 @@ class LinearDecoder(BaseDecoder):
         if self._model is None or self._lag_samples is None:
             raise RuntimeError("Call fit() before predict().")
         X = self._build_lag_matrix(eeg, self._lag_samples)
-        return self._model.predict(X).astype(np.float32)
+        pred = self._model.predict(X).astype(np.float32)
+        
+        lag_max = int(self._lag_samples.max())
+        if lag_max > 0:
+            pred = np.pad(pred, (0, lag_max), constant_values=0.0)
+        return pred
 
     # ── Lag matrix builder ────────────────────────────────────────────────────
 
@@ -156,7 +162,7 @@ class LinearDecoder(BaseDecoder):
         X = np.empty((n_valid, n_features), dtype=np.float64)
 
         for i, lag in enumerate(lags):
-            start = lag_max - lag
+            start = lag
             X[:, i * n_channels: (i + 1) * n_channels] = eeg[start: start + n_valid]
 
         return X

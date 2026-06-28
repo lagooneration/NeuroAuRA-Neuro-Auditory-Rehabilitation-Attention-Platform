@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from neurophile.models import MesgaraniAdapter, GlobalCITrainer
+from neurophile.models import MesgaraniAdapter, ZionGolumbicAdapter, GlobalCITrainer
 import sys
 
 # Add project root to path so we can import from the scripts folder
@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--checkpoint", type=Path, default=Path("checkpoints/mesgarani_crn_global_ci.pt"))
     parser.add_argument("--dataset-type", choices=["bids", "kul"], default="bids",
                         help="Dataset format: 'bids' for OpenNeuro .set files, 'kul' for KUL .mat files")
+    parser.add_argument("--model", type=str, choices=["mesgarani", "zion_golumbic"], default="mesgarani", help="Deep learning architecture to use")
     # BIDS args
     parser.add_argument("--bids-root", type=Path, default=None)
     parser.add_argument("--subject", type=str, default="001")
@@ -41,7 +42,10 @@ def main():
         return
         
     logger.info("Loading model from %s", args.checkpoint)
-    model = MesgaraniAdapter(num_eeg_channels=64, audio_sampling_rate=64)
+    if args.model == "mesgarani":
+        model = MesgaraniAdapter(num_eeg_channels=64, audio_sampling_rate=64)
+    else:
+        model = ZionGolumbicAdapter(num_eeg_channels=64, audio_sampling_rate=64)
     
     # Load weights
     state = torch.load(args.checkpoint, map_location=args.device, weights_only=True)
@@ -71,7 +75,29 @@ def main():
         if args.bids_root is None:
             logger.error("--bids-root is required when using --dataset-type bids")
             return
-        eeg, env, labels = load_bids_data(args.bids_root, args.subject)
+            
+        if args.subject.lower() == "all":
+            subjects = [f"{i:03d}" for i in range(1, 26)]
+        else:
+            subjects = [args.subject]
+            
+        all_eeg, all_env, all_labels = [], [], []
+        for sub in subjects:
+            try:
+                e, en, l = load_bids_data(args.bids_root, sub)
+                all_eeg.append(e)
+                all_env.append(en)
+                all_labels.append(l)
+            except Exception as e:
+                logger.error("Skipping subject %s: %s", sub, e)
+                
+        if not all_eeg:
+            logger.error("No valid data loaded.")
+            return
+            
+        eeg = np.concatenate(all_eeg, axis=0)
+        env = np.concatenate(all_env, axis=0)
+        labels = np.concatenate(all_labels, axis=0)
     
     # Evaluate
     logger.info("Running evaluation forward pass...")

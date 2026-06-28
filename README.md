@@ -85,7 +85,7 @@ neurophile/
 ├── decoding/       AAD decoders + parallel evaluation harness
 ├── models/         Deep-learning AAD models + Adapter ecosystem  [NEW]
 │   ├── core/       BaseAADModel — PyTorch contract for all DL models
-│   ├── adapters/   KULAdapter, MesgaraniAdapter (with fallback networks)
+│   ├── adapters/   KULAdapter, MesgaraniAdapter, ZionGolumbicAdapter
 │   └── global_trainer.py  Strategy-Pattern training orchestrator
 ├── federated/      Federated learning: edge training + server aggregation
 ├── visualization/  Real-time dashboard + session reports
@@ -111,7 +111,8 @@ data_pipeline/
 A new `models` package introduces PyTorch-native AAD models alongside the existing sklearn-based `LinearDecoder`. The architecture uses the **Adapter Pattern** to standardize diverse academic AAD models under a single interface.
 
 ```python
-from neurophile.models import KULAdapter, GlobalCITrainer
+from neurophile.models import KULAdapter, MesgaraniAdapter, ZionGolumbicAdapter
+from neurophile.models import GlobalCITrainer
 
 model = KULAdapter(num_eeg_channels=64)          # fallback TCN — no external deps
 trainer = GlobalCITrainer(model, epochs=50)
@@ -184,7 +185,7 @@ Cochlear implant EEG artifacts are **not** removable with standard ICA/ASR. Neur
 | Linear stimulus reconstruction | Ridge regression | sklearn `fit/predict` | ✅ Implemented | Crosse et al. (2016) |
 | KULAdapter | 3-layer TCN (fallback) / KUL CNN (external) | PyTorch `nn.Module` | ✅ Fallback ready | Vandecappelle et al. (2021) |
 | MesgaraniAdapter | Conv+GRU (fallback) / CRN (external) | PyTorch `nn.Module` | ✅ Fallback ready | Mesgarani & Chang (2012) |
-| ZionGolumbic cross-attention | Transformer cross-attention | PyTorch `nn.Module` | 🔧 TODO | Zion-Golumbic et al. (2013) |
+| ZionGolumbicAdapter | CNN + Transformer cross-attention | PyTorch `nn.Module` | ✅ Implemented | Zion-Golumbic et al. (2013) |
 | Global CI Foundation Model | CRN trained on CI-vocoded data | PyTorch checkpoint | ✅ Implemented (using all-subject training & anti-overfitting suite) | — |
 
 ---
@@ -215,8 +216,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [CONTRIBUTORS.md](CONTRIBUTORS.md). T
 4. **Wire real KUL / Mesgarani models** — Fill TODO markers in adapter shims
 5. **CI artifact Stage 2** (`spatial_filter.py`) — Spatial filtering contribution
 6. **New EEG device drivers** (`src/neurophile/devices/`)
-7. **ZionGolumbic cross-attention adapter** (`src/neurophile/models/adapters/`)
-8. **Federated Learning client** — Flower `NumPyClient` wrapper for edge devices
+7. **Federated Learning client** — Flower `NumPyClient` wrapper for edge devices
 
 ---
 
