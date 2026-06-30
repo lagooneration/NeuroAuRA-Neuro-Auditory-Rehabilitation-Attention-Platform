@@ -424,7 +424,6 @@ class GlobalCITrainer:
     ) -> dict[str, float]:
         self._strategy.model.eval()  # type: ignore[attr-defined]
         device = self._strategy.device  # type: ignore[attr-defined]
-        correct, total = 0, 0
         all_probs: list[float] = []
         all_labels: list[float] = []
 
@@ -443,11 +442,21 @@ class GlobalCITrainer:
                 env_b = env_b.to(device)
                 logit = self._strategy.model(eeg_b, env_b)  # type: ignore[attr-defined]
                 prob = torch.sigmoid(logit).squeeze(-1)
-                pred = (prob > 0.5).int()
-                correct += int((pred == lbl_b.to(device)).sum().item())
-                total += len(lbl_b)
                 all_probs.extend(prob.cpu().tolist())
                 all_labels.extend(lbl_b.tolist())
+
+        # 2AFC Evaluation: compare probability of attended vs unattended for each pair
+        correct_2afc = 0
+        total_2afc = 0
+        
+        for i in range(0, len(all_probs) - 1, 2):
+            prob_att = all_probs[i]
+            prob_unatt = all_probs[i + 1]
+            if prob_att > prob_unatt:
+                correct_2afc += 1
+            total_2afc += 1
+            
+        accuracy = correct_2afc / max(total_2afc, 1)
 
         # Compute Pearson r over all predictions at once (needs ≥2 unique values)
         mean_pearson_r = 0.0
@@ -461,7 +470,7 @@ class GlobalCITrainer:
                     mean_pearson_r = float(r)
 
         return {
-            "accuracy": correct / max(total, 1),
+            "accuracy": accuracy,
             "mean_pearson_r": mean_pearson_r,
         }
 

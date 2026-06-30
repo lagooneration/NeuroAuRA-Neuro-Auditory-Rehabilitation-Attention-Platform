@@ -32,6 +32,131 @@ from eeglab_bridge import run_eeglab_via_cli
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-8s  %(name)s — %(message)s")
 logger = logging.getLogger("train_bids_real")
 
+def load_bids_data_by_block(
+    bids_root: Path,
+    subject: str,
+) -> list[tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    """Like load_bids_data but returns a list of (eeg, env, labels) per block.
+
+    Enables leave-one-block-out cross-validation: each ds003516 subject has
+    5 x 10-minute blocks, so train on 4 and test on 1.
+
+    Returns
+    -------
+    blocks : list of (eeg, env, labels)
+        Each element corresponds to one StartTrigger block.
+        eeg   shape (N_windows, 512, 64)
+        env   shape (N_windows, 512, 1)
+        labels shape (N_windows,)
+    """
+    import pandas as pd
+    import scipy.io as sio
+    import scipy.signal
+
+    participants_file = bids_root / "participants.tsv"
+    df_part = pd.read_csv(participants_file, sep='\t')
+    subject_row = df_part[df_part['participant_id'] == f"sub-{subject}"]
+    if len(subject_row) == 0:
+        raise ValueError(f"Subject {subject} not found in participants.tsv")
+    attended_ch = subject_row.iloc[0]['attended_ch'].lower()
+
+    events_file = (bids_root / f"sub-{subject}" / "eeg" /
+                   f"sub-{subject}_task-AttendedSpeakerParadigmOwnName_events.tsv")
+    df_events = pd.read_csv(events_file, sep='\t')
+    start_triggers = df_events[df_events['value'] == 'StartTrigger']['onset'].values
+
+    bids_path = BIDSPath(
+        subject=subject, task="AttendedSpeakerParadigmOwnName",
+        datatype="eeg", suffix="eeg", extension=".set", root=bids_root,
+    )
+    bids_path.update(check=False)
+    raw = read_raw_bids(bids_path, verbose=False)
+    raw.load_data()
+    raw.filter(l_freq=1.0, h_freq=8.0, verbose=False)
+    orig_sfreq = raw.info['sfreq']
+    raw.resample(64.0, verbose=False)
+
+    eeg_picks = raw.copy().pick_types(eeg=True).get_data()
+    eeg_full = eeg_picks.T.astype("float32")
+    if eeg_full.shape[1] > 64:
+        eeg_full = eeg_full[:, :64]
+    elif eeg_full.shape[1] < 64:
+        eeg_full = np.pad(eeg_full, ((0, 0), (0, 64 - eeg_full.shape[1])))
+    np.nan_to_num(eeg_full, copy=False, nan=0.0)
+    eeg_full = (eeg_full - np.mean(eeg_full, axis=0)) / (np.std(eeg_full, axis=0) + 1e-8)
+
+    sfreq = raw.info['sfreq']
+    window_t = 512
+    blocks = []
+
+    for k, onset in enumerate(start_triggers):
+        block_idx = k + 1
+        start_s = int(onset * sfreq)
+        end_s = min(start_s + int(600.0 * sfreq), len(eeg_full))
+        eeg_block = eeg_full[start_s:end_s]
+
+        sig1_file = bids_root / "stimuli" / f"sig1_{block_idx}.mat"
+        sig2_file = bids_root / "stimuli" / f"sig2_{block_idx}.mat"
+        if not sig1_file.exists() or not sig2_file.exists():
+            logger.warning("Missing stimuli for block %d — skipping.", block_idx)
+            continue
+
+        att_file, unatt_file = (sig1_file, sig2_file) if attended_ch == "left" else (sig2_file, sig1_file)
+
+        def _env(f):
+            mat = sio.loadmat(f)
+            key = [k for k in mat.keys() if not k.startswith("__")][0]
+            d = mat[key].astype("float32").reshape(-1)
+            d = scipy.signal.resample(d, int(len(d) * 64.0 / orig_sfreq))
+            d = d.reshape(-1, 1).astype("float32")
+            return (d - np.mean(d)) / (np.std(d) + 1e-8)
+
+        att_env = _env(att_file)
+        unatt_env = _env(unatt_file)
+        ml = min(len(eeg_block), len(att_env), len(unatt_env))
+        eeg_b = eeg_block[:ml]
+        att_b = att_env[:ml]
+        unatt_b = unatt_env[:ml]
+
+        import random
+        n_win = ml // window_t
+        eeg_t, env_t, lbl_t = [], [], []
+        
+        att_windows = [att_b[i * window_t : (i + 1) * window_t] for i in range(n_win)]
+        unatt_windows = [unatt_b[i * window_t : (i + 1) * window_t] for i in range(n_win)]
+
+        for i in range(n_win):
+            s, e = i * window_t, (i + 1) * window_t
+            
+            # Positive Example: True match
+            eeg_t.append(eeg_b[s:e])
+            env_t.append(att_windows[i])
+            lbl_t.append(1.0)
+            
+            # Negative Example: Mismatch
+            # To break the audio-classifier bias (Clever Hans), 50% of negative examples
+            # use a temporally shifted version of the ATTENDED stream. This forces the 
+            # network to learn temporal alignment, not just speaker identity.
+            eeg_t.append(eeg_b[s:e])
+            shift_idx = random.choice([j for j in range(n_win) if j != i])
+            
+            if random.random() < 0.5:
+                env_t.append(att_windows[shift_idx])
+            else:
+                env_t.append(unatt_windows[shift_idx])
+            lbl_t.append(0.0)
+
+        if eeg_t:
+            blocks.append((
+                np.stack(eeg_t),
+                np.stack(env_t),
+                np.array(lbl_t, dtype="float32"),
+            ))
+            logger.info("Subject %s block %d: %d windows", subject, block_idx, n_win)
+
+    return blocks
+
+
 def load_bids_data(
     bids_root: Path,
     subject: str,

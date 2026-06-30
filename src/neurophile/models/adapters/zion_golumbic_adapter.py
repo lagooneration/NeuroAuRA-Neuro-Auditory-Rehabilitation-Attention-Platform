@@ -29,51 +29,46 @@ def _build_fallback_cross_attention(num_eeg_channels: int):
     class FallbackCrossAttention(nn.Module):
         def __init__(self, num_eeg_channels):
             super().__init__()
-            # Use Conv1d to extract temporal features (kernel_size=15 covers ~250ms at 64Hz)
-            self.eeg_conv = nn.Conv1d(num_eeg_channels, 32, kernel_size=15, padding=7)
+            # Causal temporal features for EEG (kernel_size=16 covers exactly 250ms at 64Hz)
+            # We use padding=0 and pad manually in forward() so the filter looks into the future.
+            self.eeg_conv = nn.Conv1d(num_eeg_channels, 32, kernel_size=16, padding=0)
             self.env_conv = nn.Conv1d(1, 32, kernel_size=15, padding=7)
             
-            # Learnable positional encoding so the model knows which time step it is looking at!
-            self.pos_emb = nn.Parameter(torch.randn(1, 1024, 32) * 0.02)
-            
-            self.norm1 = nn.LayerNorm(32)
-            self.norm2 = nn.LayerNorm(32)
-            
-            self.attn = nn.MultiheadAttention(embed_dim=32, num_heads=4, batch_first=True)
-            self.dropout = nn.Dropout(0.2)
-            
-            self.fc = nn.Sequential(
-                nn.Linear(32, 16),
-                nn.ReLU(),
-                nn.Dropout(0.2),
-                nn.Linear(16, 1)
-            )
+            # Learnable scalar and bias to map cosine similarity [-1, 1] to logits
+            self.scale = nn.Parameter(torch.tensor(10.0))
+            self.bias = nn.Parameter(torch.tensor(0.0))
             
         def forward(self, eeg, env):
             # Conv1d expects (Batch, Channels, Time)
-            eeg_c = self.eeg_conv(eeg.transpose(1, 2)).transpose(1, 2)
-            env_c = self.env_conv(env.transpose(1, 2)).transpose(1, 2)
+            eeg_t = eeg.transpose(1, 2)
+            env_t = env.transpose(1, 2)
             
-            # Add positional encodings
-            T = eeg_c.size(1)
-            eeg_c = eeg_c + self.pos_emb[:, :T, :]
-            env_c = env_c + self.pos_emb[:, :T, :]
+            import torch.nn.functional as F
             
-            # Apply LayerNorm BEFORE attention (Pre-LN Transformer standard)
-            eeg_norm = self.norm1(eeg_c)
-            env_norm = self.norm2(env_c)
+            # CAUSAL SHIFT: Pad the right side of the EEG tensor (the future) by 15 samples.
+            # This ensures eeg_c[:, :, t] is computed using eeg[:, :, t : t+16], 
+            # perfectly capturing the 250ms cortical response to the audio at time t!
+            eeg_padded = F.pad(eeg_t, (0, 15))
             
-            # Query: env, Key/Value: eeg
-            attn_out, _ = self.attn(env_norm, eeg_norm, eeg_norm)
-            attn_out = self.dropout(attn_out)
+            eeg_c = self.eeg_conv(eeg_padded).transpose(1, 2)
+            env_c = self.env_conv(env_t).transpose(1, 2)
+            # We compute Cosine Similarity DIRECTLY between the local convolutional features.
+            # This enforces strict temporal locality (250ms causal window), preventing the 
+            # network from overfitting to spurious global noise correlations.
+            import torch.nn.functional as F
             
-            # Crucial Residual Connection!
-            out_seq = env_c + attn_out
-            out_seq = torch.relu(out_seq)
+            # Compute similarity at each time step
+            # env_c shape: (Batch, Time, Features)
+            # eeg_c shape: (Batch, Time, Features)
+            # sim_time shape: (Batch, Time)
+            sim_time = F.cosine_similarity(env_c, eeg_c, dim=-1)
             
-            # Pool over time and project
-            pooled = out_seq.mean(dim=1)
-            return self.fc(pooled)
+            # Average the similarity over time
+            sim = sim_time.mean(dim=1)
+            
+            # Map [-1, 1] to logits
+            logit = sim * self.scale + self.bias
+            return logit.unsqueeze(-1)
             
     return FallbackCrossAttention(num_eeg_channels)
 

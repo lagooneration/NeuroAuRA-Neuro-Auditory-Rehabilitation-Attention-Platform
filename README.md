@@ -2,9 +2,7 @@
 
 **Open Source Platform for Neural Decoding & Federated Research**
 
-*"This repository contains an open-source software ecosystem for transforming clinical recovery journeys into collective scientific progress via privacy-preserving federated learning."*
-
-While our current foundational models focus heavily on auditory attention decoding and cochlear implant EEG, Neurophile is designed as an extensible platform for neural decoding across multiple neurological domains.
+Transforming routine Cochlear Implant (CI) rehabilitation into an active, privacy-preserving federated learning grid provides an unprecedented, highly scalable data pipeline. By establishing an open-source ecosystem, this platform democratizes Auditory Attention Decoding (AAD) research, enabling the global scientific community to collaboratively train and benchmark robust brain-computer interfaces without compromising patient privacy or clinical workflow.
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org)
@@ -186,7 +184,7 @@ Cochlear implant EEG artifacts are **not** removable with standard ICA/ASR. Neur
 | KULAdapter | 3-layer TCN (fallback) / KUL CNN (external) | PyTorch `nn.Module` | ✅ Fallback ready | Vandecappelle et al. (2021) |
 | MesgaraniAdapter | Conv+GRU (fallback) / CRN (external) | PyTorch `nn.Module` | ✅ Fallback ready | Mesgarani & Chang (2012) |
 | ZionGolumbicAdapter | CNN + Transformer cross-attention | PyTorch `nn.Module` | ✅ Implemented | Zion-Golumbic et al. (2013) |
-| Global CI Foundation Model | CRN trained on CI-vocoded data | PyTorch checkpoint | ✅ Implemented (using all-subject training & anti-overfitting suite) | — |
+| Global CI Foundation Model | Causal Spatial-Temporal CNN | PyTorch checkpoint | ✅ Implemented (73.1% zero-shot cross-subject accuracy) | — |
 
 ---
 

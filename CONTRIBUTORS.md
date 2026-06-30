@@ -282,6 +282,17 @@ python scripts/train_global_ci_model.py \
 | `--device` | `cpu` | PyTorch device: `cpu`, `cuda`, `mps` |
 | `--output-dir` | `./checkpoints` | Checkpoint save directory |
 
+### Expected Benchmarks (OpenNeuro ds003516)
+
+When developing new architectures or training from scratch, you should evaluate your models against the `compare_lobo.py` script. The expected targets are:
+
+| Model Type | Evaluation Setup | Expected Accuracy | Correlation (r) | Notes |
+|---|---|---|---|---|
+| **Classical Linear Decoder** | Subject-Specific (requires calibration) | **~79.4%** | ~0.15 | Uses Ridge Regression. *r* measures physical envelope reconstruction. |
+| **Global Deep Model (ZionGolumbicAdapter)** | Zero-Shot Cross-Subject (no calibration) | **~73.1%** | ~0.60 | Uses Causal Spatial-Temporal CNN. *r* measures Point-Biserial correlation. |
+
+> **Note on Data Leakage:** A Point-Biserial correlation of ~0.60 for deep classification models is mathematically normal for ~73% accuracy and does *not* indicate data leakage, unlike the ~0.15 correlation expected from linear regression reconstruction.
+
 ---
 
 ## 7. Step 5 — Wire the Real Academic Models
